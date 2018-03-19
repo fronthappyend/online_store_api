@@ -14,4 +14,6 @@ router.patch('/:productId', checkAuth, ProductController.products_edit_one)
 
 router.delete('/:productId', checkAuth, ProductController.products_delete_one)
 
+router.get('/state', ProductController.products_state)
+
 module.exports = router

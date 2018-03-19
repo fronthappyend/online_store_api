@@ -29,7 +29,31 @@ exports.products_get_one = (req, res, next) => {
 }
 
 exports.products_get_all = (req, res, next) => {
-    Product.find()
+
+    const pageOptions = {
+        page: req.query.page || 0,
+        limit: parseInt(req.query.limit) || 10
+    }
+
+    const filter = {};
+    if(req.query.vendor)
+        filter.vendor = req.query.vendor;
+
+    if(req.query.price)
+        filter.price = req.query.price;
+
+    if(req.query.price_gt) {
+        filter.price = filter.price || {};
+        filter.price.$gt = req.query.price_gt;
+    }
+    if(req.query.price_lt) {
+        filter.price = filter.price || {};
+        filter.price.$lt = req.query.price_lt;
+    }
+
+    Product.find(filter)
+        .skip(pageOptions.limit * pageOptions.page)
+        .limit(pageOptions.limit)
         .select('title price _id vendor')
         .exec()
         .then(docs => {
@@ -50,12 +74,8 @@ exports.products_get_all = (req, res, next) => {
 }
 
 exports.products_create_one = (req, res, next) => {
-    const token = req.headers.authorization.split(" ")[1]
-    const vendorId = jwt.decode(token).vendorId
-    console.log(vendorId)
-    console.log(jwt.decode(token))
+    const vendorId = req.userData.vendorId
     const product = new Product({
-        _id: new mongoose.Types.ObjectId(),
         title: req.body.title,
         price: req.body.price,
         vendor: vendorId
@@ -82,8 +102,7 @@ exports.products_create_one = (req, res, next) => {
 }
 
 exports.products_edit_one = (req, res, next) => {
-    const token = req.headers.authorization.split(" ")[1]
-    const vendorId = jwt.decode(token).vendorId
+    const vendorId = req.userData.vendorId
     const id = req.params.productId
     const updateOps = req.body        // shorten, maybe
 
@@ -102,8 +121,7 @@ exports.products_edit_one = (req, res, next) => {
 }
 
 exports.products_delete_one = (req, res, next) => {
-    const token = req.headers.authorization.split(" ")[1]
-    const vendorId = jwt.decode(token).vendorId
+    const vendorId = req.userData.vendorId
     const id = req.params.productId
 
     Product.remove({_id: id, vendor: vendorId})
@@ -113,3 +131,5 @@ exports.products_delete_one = (req, res, next) => {
         })
         .catch(next)
 }
+
+exports.products_state = () => {}
