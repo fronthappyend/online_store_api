@@ -1,13 +1,15 @@
 const mongoose = require('mongoose')
 const config = require('../../config')
 const Vendor = require('../models/vendor')
+const Product = require('../models/products')
+
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 
 exports.register_vendor = (req, res, next) => {
     bcrypt.hash(req.body.password, 10, (err, hash) => {
             if (err) {
-                return res.status(500).json({
+                return res.json({
                     error: err
                 })
             } else {
@@ -45,7 +47,7 @@ exports.login_vendor = (req, res, next) => {
         .then(vendor => {
             bcrypt.compare(req.body.password, vendor.password, (err, result) => {
                 if(err) {
-                    return res.status(401).json({
+                    return res.json({
                         message: "Auth failed"
                     })
                 }
@@ -71,7 +73,7 @@ exports.login_vendor = (req, res, next) => {
                         })
 
                 } else {
-                    res.status(401).json({
+                    res.json({
                         message: "Auth failed"
                     })
                 }
@@ -82,12 +84,86 @@ exports.login_vendor = (req, res, next) => {
         .catch(next)
 }
 
+exports.observe_vendor = (req, res, next) => {
+    const id = req.userData.vendorId
+    Vendor.findById(id).exec().then(result => {
+        res.json({
+            _id: id,
+            name: result.firstname + " " + result.lastname,
+            state: result.state
+        })
+    })
+}
+
+
+
 exports.delete_vendor = (req, res, next) => {
     Vendor.remove({_id: req.params.vendorId})
         .exec()
         .then(result => {
             res.json({
                 message: "vendor deleted"
+            })
+        })
+        .catch(next)
+}
+
+exports.products_create_one = (req, res, next) => {
+    const vendorId = req.userData.vendorId
+    const product = new Product({
+        title: req.body.title,
+        price: req.body.price,
+        vendor: vendorId
+    })
+    product
+        .save()
+        .then(result => {
+            res.json({
+                message: 'New product created',
+                createdProduct: {
+                    title: result.title,
+                    price: result.price,
+                    vendorId: result.vendor,
+                    _id: result._id,
+                    request: {
+                        type: 'GET',
+                        url: config.url + '/products/' + result._id
+                    }
+
+                }
+            })
+        })
+        .catch(next)
+}
+
+exports.products_delete_one = (req, res, next) => {
+    const vendorId = req.userData.vendorId
+    const id = req.params.productId
+
+    Product.remove({_id: id, vendor: vendorId})
+        .exec()
+        .then(result => {
+            res.json({
+                message: "Product is deleted"
+            })
+        })
+        .catch(next)
+}
+
+exports.products_edit_one = (req, res, next) => {
+    const vendorId = req.userData.vendorId
+    const id = req.params.productId
+    const updateOps = req.body        // shorten, maybe
+
+    Product.update({_id: id, vendor: vendorId}, { $set: updateOps})
+        .exec()
+        .then(result => {
+            res.json({
+                _id: id,
+                title: result.title,
+                price: result.price,
+                description: result.description,
+                vendor: vendorId
             })
         })
         .catch(next)

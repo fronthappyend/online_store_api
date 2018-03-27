@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const jwt = require('jsonwebtoken')
 const config = require('../../config')
 const Product = require('../models/products')
+Schema = mongoose.Schema
+
 
 
 exports.products_get_one = (req, res, next) => {
@@ -20,7 +22,7 @@ exports.products_get_one = (req, res, next) => {
                     }
                 })
             } else {
-                res.status(404).json({
+                res.json({
                     message: "No valid entry found for id " + id
                 })
             }
@@ -29,7 +31,6 @@ exports.products_get_one = (req, res, next) => {
 }
 
 exports.products_get_all = (req, res, next) => {
-
     const pageOptions = {
         page: req.query.page || 0,
         limit: parseInt(req.query.limit) || 10
@@ -54,6 +55,7 @@ exports.products_get_all = (req, res, next) => {
     Product.find(filter)
         .skip(pageOptions.limit * pageOptions.page)
         .limit(pageOptions.limit)
+        .populate("vendor", "state firstname")
         .select('title price _id vendor')
         .exec()
         .then(docs => {
@@ -73,63 +75,42 @@ exports.products_get_all = (req, res, next) => {
         .catch(next)
 }
 
-exports.products_create_one = (req, res, next) => {
-    const vendorId = req.userData.vendorId
-    const product = new Product({
-        title: req.body.title,
-        price: req.body.price,
-        vendor: vendorId
-    })
-    product
-        .save()
-        .then(result => {
-            res.status(201).json({
-                message: 'New product created',
-                createdProduct: {
-                    title: result.title,
-                    price: result.price,
-                    vendorId: result.vendor,
-                    _id: result._id,
-                    request: {
-                        type: 'GET',
-                        url: config.url + '/products/' + result._id
-                    }
-
-                }
-            })
-        })
-        .catch(next)
-}
-
-exports.products_edit_one = (req, res, next) => {
-    const vendorId = req.userData.vendorId
-    const id = req.params.productId
-    const updateOps = req.body        // shorten, maybe
-
-    Product.update({_id: id, vendor: vendorId}, { $set: updateOps})
+exports.products_delete_all = (req, res, next) => {
+     Product.remove()
         .exec()
         .then(result => {
             res.json({
-                _id: id,
-                title: result.title,
-                price: result.price,
-                description: result.description,
-                vendor: vendorId
+                message: "Products are deleted"
             })
         })
         .catch(next)
 }
 
-exports.products_delete_one = (req, res, next) => {
-    const vendorId = req.userData.vendorId
-    const id = req.params.productId
+exports.products_of_state = (req, res, next) => {
 
-    Product.remove({_id: id, vendor: vendorId})
+    Product.find()
+
+        .populate("vendor", "email firstname")
+        .select('title price _id vendor')
         .exec()
-        .then(result => {
-            res.status(204)
-        })
-        .catch(next)
-}
+        .then(docs => {
 
-exports.products_state = () => {}
+            const products = docs;
+            let result = {};
+
+            products.forEach(p => {
+                if(!result[p.vendor.state]) {
+                    result[p.vendor.state] = [p]
+                } else {
+                    result[p.vendor.state].push(p)
+                }
+            })
+
+            res.json(
+                result
+            )
+
+        })
+
+    .catch(next)
+}
