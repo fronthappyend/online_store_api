@@ -9,17 +9,12 @@ Schema = mongoose.Schema
 exports.products_get_one = (req, res, next) => {
     const id = req.params.productId
     Product.findById(id)
-        .select('title price _id vendor description')
+        .select('title price _id vendor description status')
         .exec()
         .then(doc => {
             if(doc) {
                 res.json({
-                    product: doc,
-                    request: {
-                        type: 'GET',
-                        description: 'Get all products',
-                        url: config.url + '/products/'
-                    }
+                    product: doc
                 })
             } else {
                 res.json({

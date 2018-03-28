@@ -86,13 +86,16 @@ exports.login_vendor = (req, res, next) => {
 
 exports.observe_vendor = (req, res, next) => {
     const id = req.userData.vendorId
-    Vendor.findById(id).exec().then(result => {
-        res.json({
-            _id: id,
-            name: result.firstname + " " + result.lastname,
-            state: result.state
+    Vendor
+        .findById(id)
+        .exec()
+        .then(result => {
+            res.json({
+                _id: id,
+                name: result.firstname + " " + result.lastname,
+                state: result.state
+            })
         })
-    })
 }
 
 

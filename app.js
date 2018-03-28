@@ -7,6 +7,7 @@ const cors = require('cors')
 
 const productRoutes = require('./api/routes/products')
 const vendorRoutes = require('./api/routes/vendor')
+const customerRoutes = require('./api/routes/customer')
 const adminRoutes = require('./api/routes/admin')
 
 mongoose.Promise = Promise;
@@ -39,6 +40,7 @@ const start = () => {
     app.use('/admin', adminRoutes)
     app.use('/products', productRoutes)
     app.use('/vendors', vendorRoutes)
+    app.use('/customer', customerRoutes)
 
 
 
